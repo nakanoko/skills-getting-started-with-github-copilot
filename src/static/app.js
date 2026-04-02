@@ -25,6 +25,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <p><strong>Participants:</strong></p>
+          <div class="participants">
+            ${details.participants.length > 0 ? details.participants.map(email => `<div class="participant">${email} <button class="remove-btn" data-email="${email}" data-activity="${name}">&times;</button></div>`).join('') : '<div class="participant">No participants yet.</div>'}
+          </div>
         `;
 
         activitiesList.appendChild(activityCard);
@@ -62,6 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // Refresh the activities list
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
@@ -83,4 +88,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialize app
   fetchActivities();
+
+  // Handle remove participant
+  document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('remove-btn')) {
+      const email = e.target.dataset.email;
+      const activity = e.target.dataset.activity;
+      await removeParticipant(activity, email);
+    }
+  });
+
+  async function removeParticipant(activity, email) {
+    try {
+      const response = await fetch(
+        `/activities/${encodeURIComponent(activity)}/participants/${encodeURIComponent(email)}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+        fetchActivities(); // Refresh the list
+      } else {
+        const result = await response.json();
+        alert(result.detail || "Failed to remove participant");
+      }
+    } catch (error) {
+      console.error("Error removing participant:", error);
+      alert("Failed to remove participant. Please try again.");
+    }
+  }
 });
